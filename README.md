@@ -16,3 +16,6 @@
  - The model of the virtual Arduino. Model options are the same as the Wiremod CPU.
 
  Once you spawn it in, you can get to work connecting things as inputs, outputs, or both depending entirely on what you want to do, and then writing code for your physical Arduino to react to those inputs/outputs.
+
+## Contributing
+ Contributions are welcome! Please read through the [guidelines](https://lambdagaming.github.io/guides/contributing) before submitting an issue or pull request.
