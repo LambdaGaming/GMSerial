@@ -5,8 +5,8 @@ cmake --build . --clean-first --config Release
 
 rem Move and rename binary
 cd Release
-ren "gmsv_gchroma_win64.dll" "gmcl_gchroma_win64.dll"
-copy "gmcl_gchroma_win64.dll" ".."
+ren "gmsv_gmserial_win64.dll" "gmcl_gmserial_win64.dll"
+copy "gmcl_gmserial_win64.dll" ".."
 cd ..
 
 rem Cleanup all the crap
@@ -19,7 +19,7 @@ rmdir /s /Q Release
 rmdir /s /Q x64
 rmdir /s /Q ALL_BUILD.dir
 rmdir /s /Q INSTALL.dir
-rmdir /s /Q gchroma.dir
+rmdir /s /Q gmserial.dir
 rmdir /s /Q ZERO_CHECK.dir
 rmdir /s /Q bin
 @echo Finished
