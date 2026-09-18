@@ -8,10 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 FetchContent_Declare(
-	serial
-	GIT_REPOSITORY https://github.com/markaren/serial
-	GIT_TAG 80e6364d4068c0b7e0ea6aef39fd0c8e5246f4c0)
-FetchContent_MakeAvailable(serial)
+	serial_cpp
+	GIT_REPOSITORY https://github.com/gbionics/serial_cpp
+	GIT_TAG 2ab9e20388a6efca8540e5ae8910e9e2c42a71f4)
+FetchContent_MakeAvailable(serial_cpp)
 
 FetchContent_Declare(
 	gmod-module-base
@@ -21,6 +21,6 @@ FetchContent_MakeAvailable(gmod-module-base)
 
 add_library(gmserial SHARED)
 target_sources(gmserial PRIVATE main.cpp)
-target_link_libraries(gmserial gmod-module-base serial)
+target_link_libraries(gmserial gmod-module-base serial_cpp)
 
 set_gmod_suffix_prefix(gmserial)

@@ -1,5 +1,5 @@
 # GMSerial
- Formerly known as Arduino Gmod Interface. GMSerial is an experimental binary module for Garry's Mod that allows the game to communicate with serial devices (such as Arduino), and vice versa. This repo contains the base addon, the binary module, and a Wiremod tool. The module is based on [markaren's fork of the C++ serial library.](https://github.com/markaren/serial) It works on Windows and Linux on the 64-bit version of the game.
+ Formerly known as Arduino Gmod Interface. GMSerial is an experimental binary module for Garry's Mod that allows the game to communicate with serial devices (such as Arduino), and vice versa. This repo contains the base addon, the binary module, and a Wiremod tool. The module is based on [serial_cpp.](https://github.com/gbionics/serial_cpp) It works on Windows and Linux on the 64-bit version of the game.
 
 # Installing
  1. Download this repo as a zip
@@ -7,6 +7,9 @@
  3. Download the binary module from [here.](https://github.com/LambdaGaming/GMSerial/releases)
  4. Move it to `[Steam folder]/steamapps/common/GarrysMod/garrysmod/lua/bin`. You might have to create the bin folder since it doesn't exist by default.
  5. Plug in a serial device, launch the game, and you should now be able to use the API and Wiremod tool! If you need help with the API, check out the [documentation](dev.md) and take a look at the [examples.](examples)
+ 
+ >[!NOTE]
+ > If you're on Linux, you might get a permission denied error when trying to establish a connection. You can fix this by entering the following command: `sudo usermod -a -G $(stat -c "%G" /dev/ttyS1) $USER`. Replace `/dev/ttyS1` with the port name of your device. This will add your user account to the groups your device belongs to so you can access it without root privileges.
 
 # Using the Wiremod Tool
  Ensure you have the base and [Wiremod](https://steamcommunity.com/sharedfiles/filedetails/?id=160250458) downloaded, and a serial device plugged into your PC. Obviously, the device must be programmed to send or receive data.
