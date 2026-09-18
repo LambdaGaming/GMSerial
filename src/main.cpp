@@ -1,206 +1,116 @@
 #define GMMODULE
-#define DATA_LENGTH 255
 
-#include "SerialPort.hpp"
-#include "Interface.h"
+#include "serial/serial.h"
+#include "GarrysMod/Lua/Interface.h"
 
 using namespace GarrysMod::Lua;
+using namespace serial;
+using namespace std;
 
-int ArduinoTable;
+int SerialTable;
 
-/*
-	arduino.Begin( String port )
-	Description:
-		Initializes a new connection to the specified serial port.
-	Arguments:
-		port - Name of the port, usually something like COM3. If the COM port is
-		larger than 9 then you will need to format it like this: \\\\.\\COM10
-	Returns:
-		UserData arduino - Instance of the arduino serial connection
-	Example: arduino.Begin( "COM3" )
-*/
 LUA_FUNCTION( Begin )
 {
 	LUA->CheckType( 1, Type::String );
+	LUA->CheckType( 2, Type::Number );
 	auto port = LUA->GetString( 1 );
-	SerialPort* arduino;
-	arduino = new SerialPort( port );
-	LUA->PushUserType( arduino, ArduinoTable );
+	auto baud = LUA->GetNumber( 2 );
+	Serial *serial;
+	serial = new Serial( port, baud );
+	LUA->PushUserType( serial, SerialTable );
 	return 1;
 }
 
-/*
-	Arduino:SetInputDelay( Int delay )
-	Description:
-		Sets the number of seconds before the next input can be sent to the virtual arduino.
-	Arguments:
-		delay - Delay amount in seconds
-	Returns:
-		None
-*/
-LUA_FUNCTION( SetInputDelay )
+LUA_FUNCTION( ListDevices )
 {
-	LUA->CheckType( 2, Type::Number );
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
-
-	if ( arduino->isConnected() )
+	vector<PortInfo> devices = list_ports();
+	LUA->CreateTable();
+	for ( auto d : devices )
 	{
-		arduino->InputDelay = LUA->GetNumber( 2 );
+		LUA->PushString( d.description.c_str() );
+		LUA->SetField( -2, "description" );
+		LUA->PushString( d.hardware_id.c_str() );
+		LUA->SetField( -2, "hardware_id" );
+		LUA->PushString( d.port.c_str() );
+		LUA->SetField( -2, "port" );
 	}
 	return 1;
 }
 
-/*
-	Arduino:SetOutputDelay( Int delay )
-	Description:
-		Sets the number of seconds before the next input can be sent to the physical arduino.
-	Arguments:
-		delay - Delay amount in seconds
-	Returns:
-		None
-*/
-LUA_FUNCTION( SetOutputDelay )
+LUA_FUNCTION( SetTimeout )
 {
 	LUA->CheckType( 2, Type::Number );
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
-
-	if ( arduino->isConnected() )
+	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
+	if ( serial->isOpen() )
 	{
-		arduino->OutputDelay = LUA->GetNumber( 2 );
+		auto timeout = Timeout::simpleTimeout( LUA->GetNumber( 2 ) );
+		serial->setTimeout( timeout );
 	}
-	return 1;
+	return 0;
 }
 
-/*
-	Arduino:WriteString( String str )
-	Description:
-		Sends a string to the Arduino.
-	Arguments:
-		str - String to be sent to the Arduino
-	Returns:
-		Bool success - Whether or not the string was send successfully
-	Example: local ino = arduino.Begin( "COM4" ) ino:WriteString( "Hello, World!" )
-*/
 LUA_FUNCTION( WriteString )
 {
 	LUA->CheckType( 2, Type::String );
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
+	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
 	auto str = LUA->GetString( 2 );
 
-	LUA->PushSpecial( SPECIAL_GLOB );
-		LUA->GetField( -1, "CurTime" );
-		LUA->Call( 0, 1 );
-		auto curtime = LUA->GetNumber( -1 );
-	LUA->Pop( 3 );
-
-	if ( arduino->isConnected() )
+	if ( serial->isOpen() )
 	{
-		if ( arduino->OutputDelay && arduino->OutputCooldown >= curtime )
-		{
-			LUA->PushBool( true );
-			return 1;
-		}
-
-		auto haswritten = arduino->writeSerialPort( str, DATA_LENGTH );
-		if ( arduino->OutputDelay )
-		{
-			arduino->OutputCooldown = curtime + arduino->OutputDelay;
-		}
-
-		if ( haswritten )
-		{
-			LUA->PushBool( true );
-			return 1;
-		}
+		auto written = serial->write( str );
+		LUA->PushNumber( written );
+		return 1;
 	}
-	LUA->PushBool( false );
+	LUA->PushNumber( 0 );
 	return 1;
 }
 
-/*	Arduino:ReadString()
-*	Description:
-*		Receives a string from the Arduino if it is currently transmitting one.
-	Arguments: None
-	Returns:
-		String str - String containing the read data, or an empty string if the read failed
-*/
 LUA_FUNCTION( ReadString )
 {
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
-	char received[DATA_LENGTH];
-
-	LUA->PushSpecial( SPECIAL_GLOB );
-		LUA->GetField( -1, "CurTime" );
-		LUA->Call( 0, 1 );
-		auto curtime = LUA->GetNumber( -1 );
-	LUA->Pop( 3 );
-
-	if ( arduino->isConnected() )
+	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
+	auto size = LUA->GetNumber( 2 );
+	auto eol = LUA->GetString( 3 );
+	if ( serial->isOpen() )
 	{
-		if ( arduino->InputDelay && arduino->InputCooldown >= curtime )
-		{
-			LUA->PushBool( true );
-			return 1;
-		}
+		if ( size <= 0 )
+			size = 65536;
+		if ( eol == NULL )
+			eol = "\n";
 
-		auto hasread = arduino->readSerialPort( received, DATA_LENGTH );
-		if ( arduino->InputDelay )
-		{
-			arduino->InputCooldown = curtime + arduino->InputDelay;
-		}
-
-		if ( hasread )
-		{
-			LUA->PushString( received );
-			return 1;
-		}
+		string eol_s = eol;
+		auto str = serial->readline( ( size_t ) size, eol_s );
+		LUA->PushString( str.c_str() );
+		return 1;
 	}
-	LUA->PushString( "" ); // Return empty string if read fails
+	LUA->PushString( "" );
 	return 1;
 }
 
-/*
-	Arduino:IsConnected()
-	Description:
-		Checks whether or not the Arduino currently has a valid connection.
-	Arguments: None
-	Returns:
-		Bool connected - Whether or not the specified connection is available
-*/
 LUA_FUNCTION( IsConnected )
 {
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
-	LUA->PushBool( arduino->isConnected() );
+	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
+	LUA->PushBool( serial->isOpen() );
 	return 1;
 }
 
-/*
-	Arduino:Close()
-	Description:
-		Closes the connection. Do not try to start a new connection on the same port without calling
-		this on the old connection first, or else things will break!
-	Arguments: None
-	Returns: None
-*/
 LUA_FUNCTION( Close )
 {
-	auto arduino = LUA->GetUserType<SerialPort>( 1, ArduinoTable );
-	if ( arduino->isConnected() )
+	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
+	if ( serial->isOpen() )
 	{
-		arduino->~SerialPort();
+		serial->close();
+		delete serial;
 	}
 	return 0;
 }
 
 GMOD_MODULE_OPEN()
 {
-	ArduinoTable = LUA->CreateMetaTable( "Arduino" );
+	SerialTable = LUA->CreateMetaTable( "Serial" );
 	LUA->Push( -1 );
 		LUA->SetField( -2, "__index" );
-		LUA->PushCFunction( SetInputDelay );
-		LUA->SetField( -2, "SetInputDelay" );
-		LUA->PushCFunction( SetOutputDelay );
-		LUA->SetField( -2, "SetOutputDelay" );
+		LUA->PushCFunction( SetTimeout );
+		LUA->SetField( -2, "SetTimeout" );
 		LUA->PushCFunction( WriteString );
 		LUA->SetField( -2, "WriteString" );
 		LUA->PushCFunction( ReadString );
@@ -215,7 +125,9 @@ GMOD_MODULE_OPEN()
 		LUA->CreateTable();
 			LUA->PushCFunction( Begin );
 			LUA->SetField( -2, "Begin" );
-		LUA->SetField( -2,  "arduino" );
+			LUA->PushCFunction( ListDevices );
+			LUA->SetField( -2, "ListDevices" );
+		LUA->SetField( -2,  "gmserial" );
 	LUA->Pop();
 	return 0;
 }

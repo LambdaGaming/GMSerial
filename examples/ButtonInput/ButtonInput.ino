@@ -1,17 +1,15 @@
 // Writes a value based on a button state
-// The value can then be read by the virtual Arduino
+// The value can then be read by the virtual device
 
-#define BAUD 9600
 #define INPIN 12
 
 void setup() {
-  Serial.begin( BAUD );
+  Serial.begin( 9600 );
   pinMode( INPIN, INPUT );
   pinMode( LED_BUILTIN, OUTPUT );
 }
 
 int buttonstate = 0;
-
 void loop() {
   buttonstate = digitalRead( INPIN );
   if ( buttonstate == LOW )
