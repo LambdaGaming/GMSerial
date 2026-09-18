@@ -1,10 +1,16 @@
-#define GMMODULE
-
-#include "serial/serial.h"
+#include "serial_cpp/serial.h"
 #include "GarrysMod/Lua/Interface.h"
 
+#define GMMODULE
+#define PRINT( STRING ) \
+	LUA->PushSpecial( SPECIAL_GLOB ); \
+	LUA->GetField( -1, "print" ); \
+	LUA->PushString( STRING ); \
+	LUA->Call( 1, 0 ); \
+	LUA->Pop();
+
 using namespace GarrysMod::Lua;
-using namespace serial;
+using namespace serial_cpp;
 using namespace std;
 
 int SerialTable;
@@ -15,9 +21,18 @@ LUA_FUNCTION( Begin )
 	LUA->CheckType( 2, Type::Number );
 	auto port = LUA->GetString( 1 );
 	auto baud = LUA->GetNumber( 2 );
-	Serial *serial;
-	serial = new Serial( port, baud );
-	LUA->PushUserType( serial, SerialTable );
+	try
+	{
+		Serial *serial;
+		serial = new Serial( port, baud );
+		LUA->PushUserType( serial, SerialTable );
+		return 1;
+	}
+	catch ( exception& e )
+	{
+		PRINT( e.what() );
+	}
+	LUA->PushNil();
 	return 1;
 }
 
@@ -54,7 +69,6 @@ LUA_FUNCTION( WriteString )
 	LUA->CheckType( 2, Type::String );
 	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
 	auto str = LUA->GetString( 2 );
-
 	if ( serial->isOpen() )
 	{
 		auto written = serial->write( str );
@@ -77,8 +91,7 @@ LUA_FUNCTION( ReadString )
 		if ( eol == NULL )
 			eol = "\n";
 
-		string eol_s = eol;
-		auto str = serial->readline( ( size_t ) size, eol_s );
+		auto str = serial->readline( ( size_t ) size, eol );
 		LUA->PushString( str.c_str() );
 		return 1;
 	}
