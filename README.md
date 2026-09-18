@@ -1,13 +1,15 @@
 # GMSerial
  Formerly known as Arduino Gmod Interface. GMSerial is an experimental binary module for Garry's Mod that allows the game to communicate with serial devices (such as Arduino), and vice versa. This repo contains the base addon, the binary module, and a Wiremod tool. The module is based on [markaren's fork of the C++ serial library.](https://github.com/markaren/serial) It works on Windows and Linux on the 64-bit version of the game.
 
-## Installing the Base
- 1. Download the latest release from [here.](https://github.com/LambdaGaming/GMSerial/releases)
- 2. Copy the folders inside the zip file to `garrysmod/garrysmod/lua`.
- 3. Launch the game and you should now be able to use the API and Wiremod tool! If you need help with the API, check out the [documentation](dev.md) and take a look at the [examples.](examples)
+# Installing
+ 1. Download this repo as a zip
+ 2. Extract it to `[Steam folder]/steamapps/common/GarrysMod/garrysmod/addons/[addon name]`
+ 3. Download the binary module from [here.](https://github.com/LambdaGaming/GMSerial/releases)
+ 4. Move it to `[Steam folder]/steamapps/common/GarrysMod/garrysmod/lua/bin`. You might have to create the bin folder since it doesn't exist by default.
+ 5. Plug in a serial device, launch the game, and you should now be able to use the API and Wiremod tool! If you need help with the API, check out the [documentation](dev.md) and take a look at the [examples.](examples)
 
-## Using the Wiremod Tool
- Ensure you have the base and [Wiremod](https://steamcommunity.com/sharedfiles/filedetails/?id=160250458) downloaded, and a serial device plugged into your PC. The device must be programmed to send or receive data through the serial port.
+# Using the Wiremod Tool
+ Ensure you have the base and [Wiremod](https://steamcommunity.com/sharedfiles/filedetails/?id=160250458) downloaded, and a serial device plugged into your PC. Obviously, the device must be programmed to send or receive data.
 
  The Wiremod tool can be found in the "Chips, Gates" category. Once you have it selected, you can change various settings that include:
  - Whether or not it should be enabled on spawn. If disabled, the virtual device will not be able to transmit or receive any data until turned on through a virtual input.
@@ -24,5 +26,5 @@
 2. Clone this repo with Git.
 3. Run `build_linux.sh` if you're on Linux and `build_windows.bat` if you're on Windows. The dll files will be in the src folder.
 
-## Contributing
+# Contributing
  Contributions are welcome! Please read through the [guidelines](https://lambdagaming.github.io/guides/contributing) before submitting an issue or pull request.
