@@ -3,9 +3,8 @@ rem Build dll
 cmake ./ -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --clean-first --config Release
 
-rem Move and rename binary
+rem Move binary
 cd Release
-ren "gmsv_gmserial_win64.dll" "gmcl_gmserial_win64.dll"
 copy "gmcl_gmserial_win64.dll" ".."
 cd ..
 
