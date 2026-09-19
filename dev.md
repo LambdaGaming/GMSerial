@@ -11,6 +11,14 @@
 local device = gmserial.Begin( "COM3", 9600 )
 ```
 
+# gmserial.ListPorts()
+## Returns
+ `Table` - List of available serial ports.
+## Example
+```lua
+PrintTable( gmserial.ListPorts() )
+```
+
 # Serial:SetOutputDelay( `Number` delay )
 ## Description
  Sets the delay for outgoing data to the physical device.

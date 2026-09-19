@@ -36,6 +36,22 @@ LUA_FUNCTION( Begin )
 	return 1;
 }
 
+LUA_FUNCTION( ListPorts )
+{
+	auto list = SerialPort::ListPorts();
+	LUA->CreateTable();
+	int index = LUA->Top();
+	int key = 1;
+	for ( auto p : list )
+	{
+		LUA->PushNumber( key );
+		LUA->PushString( p.c_str() );
+		LUA->SetTable( index );
+		key++;
+	}
+	return 1;
+}
+
 LUA_FUNCTION( SetInputDelay )
 {
 	LUA->CheckType( 2, Type::Number );
@@ -170,6 +186,8 @@ GMOD_MODULE_OPEN()
 		LUA->CreateTable();
 			LUA->PushCFunction( Begin );
 			LUA->SetField( -2, "Begin" );
+			LUA->PushCFunction( ListPorts );
+			LUA->SetField( -2, "ListPorts" );
 		LUA->SetField( -2,  "gmserial" );
 	LUA->Pop();
 	return 0;

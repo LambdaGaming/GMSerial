@@ -102,3 +102,40 @@ void SerialPort::closeSerial()
 {
 	CloseHandle( this->handler );
 }
+
+// Modified version of https://github.com/gbionics/serial_cpp/blob/main/src/impl/list_ports/list_ports_win.cc
+static const DWORD port_name_max_length = 256;
+vector<string> SerialPort::ListPorts()
+{
+	vector<string> list;
+	HDEVINFO device_info_set = SetupDiGetClassDevs( ( const GUID * ) &GUID_DEVINTERFACE_COMPORT, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE );
+	unsigned int device_info_set_index = 0;
+	SP_DEVINFO_DATA device_info_data;
+	device_info_data.cbSize = sizeof( SP_DEVINFO_DATA );
+	while( SetupDiEnumDeviceInfo( device_info_set, device_info_set_index, &device_info_data ) )
+	{
+		device_info_set_index++;
+
+		// Get port name
+		HKEY hkey = SetupDiOpenDevRegKey( device_info_set, &device_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ );
+		TCHAR port_name[port_name_max_length];
+		DWORD port_name_length = port_name_max_length;
+		LONG return_code = RegQueryValueEx( hkey, _T("PortName"), NULL, NULL, ( LPBYTE ) port_name, &port_name_length);
+		RegCloseKey( hkey );
+
+		if( return_code != EXIT_SUCCESS )
+			continue;
+
+		if( port_name_length > 0 && port_name_length <= port_name_max_length )
+			port_name[port_name_length-1] = '\0';
+		else
+			port_name[0] = '\0';
+
+		// Ignore parallel ports
+		if( _tcsstr( port_name, _T( "LPT" ) ) != NULL )
+			continue;
+
+		list.push_back( port_name );
+	}
+	return list;
+}
