@@ -15,8 +15,8 @@ if SERVER then
 	end
 
 	function ENT:Setup( enabled, port, baud, model, numfix, timeout )
-		self.Instance = gmserial.Begin( port )
-		if !self.Instance:IsConnected() then
+		self.Instance = gmserial.Begin( port, tonumber( baud ) )
+		if !self.Instance or !self.Instance:IsConnected() then
 			MsgC( Color( 255, 0, 0 ), "[GMSerial] ERROR: Failed to initialize connection!" )
 			self:EmitSound( "buttons/button10.wav" )
 			self:Remove()
@@ -63,7 +63,9 @@ if SERVER then
 
 	function ENT:OnRemove()
 		timer.Remove( "SerialTimer"..self:EntIndex() )
-		self.Instance:Close()
+		if IsValid( self.Instance ) then
+			self.Instance:Close()
+		end
 	end
 end
 

@@ -5,7 +5,7 @@ cmake --build . --clean-first --config Release
 
 rem Move binary
 cd Release
-copy "gmcl_gmserial_win64.dll" ".."
+copy "gmsv_gmserial_win64.dll" ".."
 cd ..
 
 rem Cleanup all the crap
