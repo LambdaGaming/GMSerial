@@ -11,22 +11,17 @@
 local device = gmserial.Begin( "COM3", 9600 )
 ```
 
-# gmserial.ListDevices()
-## Returns
- `Table` - List of valid serial devices and information about them including description, hardware ID, and port name.
-## Example
-```lua
-local devices = gmserial.ListDevices()
-for k,v in pairs( devices ) do
-	print( v.description.." "..v.hardware_id.." "..v.port )
-end
-```
-
-# Serial:SetTimeout( `Number` timeout )
+# Serial:SetOutputDelay( `Number` delay )
 ## Description
- Sets a read/write timeout for the serial connection. Set to 1000 by default; set to 0 for non-blocking mode.
+ Sets the delay for outgoing data to the physical device.
 ## Arguments
- `Number` - Amount of milliseconds that the timeout should last.
+ `Number` - Amount of seconds that the delay should last.
+
+# Serial:SetInputDelay( `Number` delay )
+## Description
+ Sets the delay for incoming data from the physical device.
+## Arguments
+ `Number` - Amount of seconds that the delay should last.
 
 # Serial:WriteString( `String` str )
 ## Arguments

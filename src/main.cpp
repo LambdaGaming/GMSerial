@@ -1,7 +1,8 @@
-#include "serial_cpp/serial.h"
+#include "SerialPort.hpp"
 #include "GarrysMod/Lua/Interface.h"
 
 #define GMMODULE
+#define DATA_LENGTH 255
 #define PRINT( STRING ) \
 	LUA->PushSpecial( SPECIAL_GLOB ); \
 	LUA->GetField( -1, "print" ); \
@@ -10,7 +11,6 @@
 	LUA->Pop();
 
 using namespace GarrysMod::Lua;
-using namespace serial_cpp;
 using namespace std;
 
 int SerialTable;
@@ -23,8 +23,8 @@ LUA_FUNCTION( Begin )
 	auto baud = LUA->GetNumber( 2 );
 	try
 	{
-		Serial *serial;
-		serial = new Serial( port, baud );
+		SerialPort *serial;
+		serial = new SerialPort( port, baud );
 		LUA->PushUserType( serial, SerialTable );
 		return 1;
 	}
@@ -36,64 +36,95 @@ LUA_FUNCTION( Begin )
 	return 1;
 }
 
-LUA_FUNCTION( ListDevices )
+LUA_FUNCTION( SetInputDelay )
 {
-	vector<PortInfo> devices = list_ports();
-	LUA->CreateTable();
-	for ( auto d : devices )
+	LUA->CheckType( 2, Type::Number );
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
+	if ( serial != nullptr && serial->isConnected() )
 	{
-		LUA->PushString( d.description.c_str() );
-		LUA->SetField( -2, "description" );
-		LUA->PushString( d.hardware_id.c_str() );
-		LUA->SetField( -2, "hardware_id" );
-		LUA->PushString( d.port.c_str() );
-		LUA->SetField( -2, "port" );
+		serial->InputDelay = LUA->GetNumber( 2 );
 	}
 	return 1;
 }
 
-LUA_FUNCTION( SetTimeout )
+LUA_FUNCTION( SetOutputDelay )
 {
 	LUA->CheckType( 2, Type::Number );
-	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
-	if ( serial->isOpen() )
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
+
+	if ( serial != nullptr && serial->isConnected() )
 	{
-		auto timeout = Timeout::simpleTimeout( LUA->GetNumber( 2 ) );
-		serial->setTimeout( timeout );
+		serial->OutputDelay = LUA->GetNumber( 2 );
 	}
-	return 0;
+	return 1;
 }
 
 LUA_FUNCTION( WriteString )
 {
 	LUA->CheckType( 2, Type::String );
-	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
 	auto str = LUA->GetString( 2 );
-	if ( serial->isOpen() )
+
+	LUA->PushSpecial( SPECIAL_GLOB );
+		LUA->GetField( -1, "CurTime" );
+		LUA->Call( 0, 1 );
+		auto curtime = LUA->GetNumber( -1 );
+	LUA->Pop( 3 );
+
+	if ( serial != nullptr && serial->isConnected() )
 	{
-		auto written = serial->write( str );
-		LUA->PushNumber( written );
-		return 1;
+		if ( serial->OutputDelay && serial->OutputCooldown >= curtime )
+		{
+			LUA->PushBool( true );
+			return 1;
+		}
+
+		auto haswritten = serial->writeSerialPort( str, DATA_LENGTH );
+		if ( serial->OutputDelay )
+		{
+			serial->OutputCooldown = curtime + serial->OutputDelay;
+		}
+
+		if ( haswritten )
+		{
+			LUA->PushBool( true );
+			return 1;
+		}
 	}
-	LUA->PushNumber( 0 );
+	LUA->PushBool( false );
 	return 1;
 }
 
 LUA_FUNCTION( ReadString )
 {
-	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
-	auto size = LUA->GetNumber( 2 );
-	auto eol = LUA->GetString( 3 );
-	if ( serial->isOpen() )
-	{
-		if ( size <= 0 )
-			size = 65536;
-		if ( eol == NULL )
-			eol = "\n";
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
+	char received[DATA_LENGTH];
 
-		auto str = serial->readline( ( size_t ) size, eol );
-		LUA->PushString( str.c_str() );
-		return 1;
+	LUA->PushSpecial( SPECIAL_GLOB );
+		LUA->GetField( -1, "CurTime" );
+		LUA->Call( 0, 1 );
+		auto curtime = LUA->GetNumber( -1 );
+	LUA->Pop( 3 );
+
+	if ( serial != nullptr && serial->isConnected() )
+	{
+		if ( serial->InputDelay && serial->InputCooldown >= curtime )
+		{
+			LUA->PushBool( true );
+			return 1;
+		}
+
+		auto hasread = serial->readSerialPort( received, DATA_LENGTH );
+		if ( serial->InputDelay )
+		{
+			serial->InputCooldown = curtime + serial->InputDelay;
+		}
+
+		if ( hasread )
+		{
+			LUA->PushString( received );
+			return 1;
+		}
 	}
 	LUA->PushString( "" );
 	return 1;
@@ -101,17 +132,16 @@ LUA_FUNCTION( ReadString )
 
 LUA_FUNCTION( IsConnected )
 {
-	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
-	LUA->PushBool( serial->isOpen() );
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
+	LUA->PushBool( serial->isConnected() );
 	return 1;
 }
 
 LUA_FUNCTION( Close )
 {
-	auto serial = LUA->GetUserType<Serial>( 1, SerialTable );
-	if ( serial->isOpen() )
+	auto serial = LUA->GetUserType<SerialPort>( 1, SerialTable );
+	if ( serial != nullptr && serial->isConnected() )
 	{
-		serial->close();
 		delete serial;
 	}
 	return 0;
@@ -122,8 +152,10 @@ GMOD_MODULE_OPEN()
 	SerialTable = LUA->CreateMetaTable( "Serial" );
 	LUA->Push( -1 );
 		LUA->SetField( -2, "__index" );
-		LUA->PushCFunction( SetTimeout );
-		LUA->SetField( -2, "SetTimeout" );
+		LUA->PushCFunction( SetInputDelay );
+		LUA->SetField( -2, "SetInputDelay" );
+		LUA->PushCFunction( SetOutputDelay );
+		LUA->SetField( -2, "SetOutputDelay" );
 		LUA->PushCFunction( WriteString );
 		LUA->SetField( -2, "WriteString" );
 		LUA->PushCFunction( ReadString );
@@ -138,8 +170,6 @@ GMOD_MODULE_OPEN()
 		LUA->CreateTable();
 			LUA->PushCFunction( Begin );
 			LUA->SetField( -2, "Begin" );
-			LUA->PushCFunction( ListDevices );
-			LUA->SetField( -2, "ListDevices" );
 		LUA->SetField( -2,  "gmserial" );
 	LUA->Pop();
 	return 0;

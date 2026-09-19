@@ -14,7 +14,7 @@ if SERVER then
 		self.Outputs = Wire_CreateOutputs( self, { "Data Output" } )
 	end
 
-	function ENT:Setup( enabled, port, baud, model, numfix, timeout )
+	function ENT:Setup( enabled, port, baud, model, numfix, inputdelay, outputdelay )
 		self.Instance = gmserial.Begin( port, tonumber( baud ) )
 		if !self.Instance or !self.Instance:IsConnected() then
 			MsgC( Color( 255, 0, 0 ), "[GMSerial] ERROR: Failed to initialize connection!" )
@@ -26,17 +26,19 @@ if SERVER then
 		self.Port = port
 		self.Baudrate = baud
 		self.NumFix = tobool( numfix )
-		self.Instance:SetTimeout( timeout )
-		self.Timeout = timeout
+		self.Instance:SetInputDelay( inputdelay )
+		self.Instance:SetOutputDelay( outputdelay )
+		self.InputDelay = inputdelay
+		self.OutputDelay = outputdelay
 		self:UpdateOverlay()
 		self:ProcessOutput()
 	end
 
 	function ENT:UpdateOverlay()
 		local enabled = self.Enabled and "Enabled" or "Disabled"
-		self:SetOverlayText( "Status: "..enabled.."\nSerial Port: "..self.Port.."\nBaudrate: "..self.Baudrate.."\nTimeout: "..self.Timeout )
+		self:SetOverlayText( "Status: "..enabled.."\nSerial Port: "..self.Port.."\nBaudrate: "..self.Baudrate.."\nInput Delay: "..self.InputDelay.."\nOutput Delay: "..self.OutputDelay )
 	end
-	
+
 	function ENT:TriggerInput( iname, value )
 		if iname == "Enabled" then
 			self.Enabled = tobool( value )
@@ -69,4 +71,4 @@ if SERVER then
 	end
 end
 
-duplicator.RegisterEntityClass( "gmod_wire_serial", WireLib.MakeWireEnt, "Data", "StartEnabled", "Port", "Baudrate", "model", "NumFix", "Timeout" )
+duplicator.RegisterEntityClass( "gmod_wire_serial", WireLib.MakeWireEnt, "Data", "StartEnabled", "Port", "Baudrate", "model", "NumFix", "InputDelay", "OutputDelay" )

@@ -3,8 +3,8 @@ WireToolSetup.open( "serial", "Serial", "gmod_wire_serial", nil, "Serial" )
 
 if CLIENT then
 	language.Add( "tool.wire_serial.name", "Serial Device" )
-	language.Add( "tool.wire_serial.desc", "Transmits to and receives data from a real serial device." )
-	language.Add( "tool.wire_serial.0", "Left Click: Spawn device." )
+	language.Add( "tool.wire_serial.desc", "Transmits to and receives data from a physical serial device." )
+	language.Add( "tool.wire_serial.0", "Left Click: Spawn virtual device." )
 	WireToolSetup.setToolMenuIcon( "icon16/wrench.png" )
 end
 
@@ -12,7 +12,7 @@ WireToolSetup.SetupMax( 5 )
 
 if SERVER then
 	function TOOL:GetConVars()
-		return self:GetClientNumber( "StartEnabled" ), self:GetClientInfo( "Port" ), self:GetClientInfo( "Baudrate" ), self:GetClientInfo( "model" ), self:GetClientNumber( "NumFix" ), self:GetClientNumber( "Timeout" )
+		return self:GetClientNumber( "StartEnabled" ), self:GetClientInfo( "Port" ), self:GetClientInfo( "Baudrate" ), self:GetClientInfo( "model" ), self:GetClientNumber( "NumFix" ), self:GetClientNumber( "InputDelay" ), self:GetClientNumber( "OutputDelay" )
 	end
 
 	function TOOL:LeftClick_PostMake( ent, ply, trace )
@@ -39,7 +39,8 @@ TOOL.ClientConVar = {
 	Baudrate = 9600,
 	model = "models/bull/gates/microcontroller2.mdl",
 	NumFix = 0,
-	Timeout = 1000
+	InputDelay = 0,
+	OutputDelay = 0
 }
 
 function TOOL.BuildCPanel( panel )
@@ -48,6 +49,7 @@ function TOOL.BuildCPanel( panel )
 	panel:CheckBox( "Convert Inputs To Numbers", "wire_serial_NumFix" )
 	panel:TextEntry( "Serial Port Name", "wire_serial_Port" )
 	panel:NumberWang( "Baudrate", "wire_serial_Baudrate", 0, 1000000, 0 )
-	panel:NumberWang( "Timeout", "wire_serial_Timeout", 0, 10000, 0 )
+	panel:NumberWang( "Input Delay", "wire_serial_InputDelay", 0, 600, 0 )
+	panel:NumberWang( "Output Delay", "wire_serial_OutputDelay", 0, 600, 0 )
 	WireDermaExts.ModelSelect( panel, "wire_serial_model", list.Get( "Wire_gate_Models" ), 2 )
 end
